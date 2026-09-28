@@ -1,0 +1,620 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZenBell – Meds &amp; Fever Tracker</title>
+<meta name="description" content="Scan a prescription, get dose reminders, and track fever &amp; symptoms — entirely on your phone. No account, no cloud sync, no ads.">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="ZenBell — track a sick kid's meds &amp; fever, fully offline">
+<meta property="og:description" content="Scan a prescription, get dose reminders, and track fever &amp; symptoms — entirely on your phone. No account, no cloud sync, no ads.">
+<meta property="og:image" content="assets/icon/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="icon" href="assets/icon/favicon-32.png" sizes="32x32">
+<link rel="icon" href="assets/icon/icon-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="assets/icon/apple-touch-icon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700;6..12,800&display=swap" rel="stylesheet">
+
+<style>
+  /* Farmer's Market — the same sage-green/porcelain theme ZenBell itself ships, values pulled
+     straight from AppTheme.swift's farmersMarketLight/farmersMarketDark palettes (already run
+     through the app's own WCAG accessibility pass) rather than invented fresh for this page. */
+  :root {
+    --bg: #f3f6ee;
+    --surface: #ffffff;
+    --surface-alt: #e9ebe0;
+    --ink: #26301f;
+    --ink-soft: #5e6b55;
+    --ink-faint: #8b9680;
+    --accent: #3d4a34;
+    --accent-deep: #2a331f;
+    --accent-soft: #dbe3d0;
+    --mint: #dbe3d0;
+    --mint-ink: #3d4a34;
+    --peach: #e7dcc2;
+    --peach-ink: #7a5a2e;
+    --border: #d6dccb;
+    --shadow: 0 20px 45px -25px rgba(38, 48, 31, 0.35);
+    --radius-lg: 28px;
+    --radius-md: 20px;
+    --radius-pill: 999px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #11150e;
+      --surface: #1a1f15;
+      --surface-alt: #1e241a;
+      --ink: #eff2e9;
+      --ink-soft: #b0bba3;
+      --ink-faint: #7e8c72;
+      --accent: #a6bb92;
+      --accent-deep: #c3d4b1;
+      --accent-soft: #243326;
+      --mint: #243326;
+      --mint-ink: #a6bb92;
+      --peach: #362e1e;
+      --peach-ink: #d8b27f;
+      --border: #333b26;
+      --shadow: 0 20px 45px -25px rgba(0, 0, 0, 0.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #11150e;
+    --surface: #1a1f15;
+    --surface-alt: #1e241a;
+    --ink: #eff2e9;
+    --ink-soft: #b0bba3;
+    --ink-faint: #7e8c72;
+    --accent: #a6bb92;
+    --accent-deep: #c3d4b1;
+    --accent-soft: #243326;
+    --mint: #243326;
+    --mint-ink: #a6bb92;
+    --peach: #362e1e;
+    --peach-ink: #d8b27f;
+    --border: #333b26;
+    --shadow: 0 20px 45px -25px rgba(0, 0, 0, 0.6);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 17px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  img { max-width: 100%; display: block; }
+  a { color: inherit; }
+
+  h1, h2, h3 {
+    font-family: "Baloo 2", "Nunito Sans", sans-serif;
+    font-weight: 700;
+    line-height: 1.12;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .wrap {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ---------- nav ---------- */
+  header.site-nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    max-width: 1160px;
+    margin: 0 auto;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: "Baloo 2", sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+  }
+  .brand img { width: 34px; height: 34px; border-radius: 9px; }
+  .nav-links { display: flex; align-items: center; gap: 22px; }
+  .nav-links a {
+    text-decoration: none;
+    color: var(--ink-soft);
+    font-weight: 700;
+    font-size: 15px;
+  }
+  .nav-links a:hover { color: var(--accent-deep); }
+  .nav-cta {
+    background: var(--ink);
+    color: var(--bg) !important;
+    padding: 9px 18px;
+    border-radius: var(--radius-pill);
+    font-size: 14px !important;
+  }
+  @media (max-width: 720px) {
+    .nav-links a:not(.nav-cta) { display: none; }
+  }
+
+  /* ---------- store badges ---------- */
+  .store-row { display: flex; flex-wrap: wrap; gap: 12px; }
+  .store-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--ink);
+    color: var(--bg);
+    padding: 11px 20px 11px 16px;
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    font-weight: 700;
+    box-shadow: var(--shadow);
+    transition: transform 0.15s ease;
+  }
+  .store-badge:hover { transform: translateY(-2px); }
+  .store-badge svg { width: 24px; height: 24px; flex: none; }
+  .store-badge .lines { display: flex; flex-direction: column; line-height: 1.15; }
+  .store-badge .lines small { font-size: 11px; opacity: 0.75; font-weight: 600; }
+  .store-badge .lines strong { font-size: 16px; font-family: "Baloo 2", sans-serif; }
+
+  /* ---------- hero ---------- */
+  .hero {
+    padding: 64px 0 40px;
+  }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1.05fr 0.85fr;
+    gap: 56px;
+    align-items: center;
+  }
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent-soft);
+    color: var(--accent-deep);
+    padding: 6px 14px;
+    border-radius: var(--radius-pill);
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .hero h1 {
+    font-size: clamp(2.4rem, 4.4vw, 3.4rem);
+    color: var(--ink);
+  }
+  .hero h1 .accent { color: var(--accent-deep); }
+  .hero p.lede {
+    margin: 22px 0 30px;
+    font-size: 19px;
+    color: var(--ink-soft);
+    max-width: 46ch;
+  }
+  .hero-proof {
+    margin-top: 26px;
+    display: flex;
+    gap: 22px;
+    flex-wrap: wrap;
+  }
+  .hero-proof div { font-size: 13.5px; color: var(--ink-faint); font-weight: 700; }
+  .hero-proof strong { display: block; font-size: 20px; color: var(--ink); font-family: "Baloo 2", sans-serif; }
+
+  .phone-stage {
+    position: relative;
+    display: flex;
+    justify-content: center;
+  }
+  .phone-frame {
+    position: relative;
+    width: 280px;
+    border-radius: 42px;
+    background: #171f13;
+    padding: 12px;
+    box-shadow: 0 40px 70px -30px rgba(10, 30, 45, 0.55);
+  }
+  .phone-frame::before {
+    content: "";
+    position: absolute;
+    top: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 84px;
+    height: 20px;
+    background: #171f13;
+    border-radius: 12px;
+    z-index: 3;
+  }
+  .phone-screen {
+    position: relative;
+    border-radius: 30px;
+    overflow: hidden;
+    background: #000;
+    aspect-ratio: 9 / 19.5;
+  }
+  .phone-screen video,
+  .phone-screen img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .phone-blob {
+    position: absolute;
+    inset: -60px -80px auto auto;
+    width: 320px;
+    height: 320px;
+    background: radial-gradient(circle, var(--accent-soft), transparent 70%);
+    filter: blur(6px);
+    z-index: -1;
+  }
+
+  @media (max-width: 880px) {
+    .hero-grid { grid-template-columns: 1fr; }
+    .phone-stage { order: -1; margin-bottom: 8px; }
+    .phone-frame { width: 230px; }
+  }
+
+  /* ---------- value props ---------- */
+  .value-props {
+    padding: 20px 0 64px;
+  }
+  .value-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .value-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 26px 24px;
+  }
+  .value-card .glyph {
+    width: 46px; height: 46px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 16px;
+    font-size: 22px;
+  }
+  .value-card h3 { font-size: 18px; margin-bottom: 8px; }
+  .value-card p { margin: 0; color: var(--ink-soft); font-size: 15px; }
+  @media (max-width: 780px) {
+    .value-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ---------- features ---------- */
+  .feature {
+    padding: 56px 0;
+    border-top: 1px solid var(--border);
+  }
+  .feature-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: center;
+  }
+  .feature.reverse .feature-grid { direction: rtl; }
+  .feature.reverse .feature-grid > * { direction: ltr; }
+  .feature-tag {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--accent-deep);
+    background: var(--accent-soft);
+    padding: 5px 12px;
+    border-radius: var(--radius-pill);
+    margin-bottom: 14px;
+  }
+  .feature h2 { font-size: clamp(1.6rem, 2.6vw, 2.1rem); margin-bottom: 14px; }
+  .feature p { color: var(--ink-soft); font-size: 16.5px; max-width: 48ch; }
+  .feature-shots {
+    display: flex;
+    gap: 18px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .shot-card {
+    width: 190px;
+    border-radius: 24px;
+    overflow: hidden;
+    background: #171f13;
+    padding: 8px;
+    box-shadow: var(--shadow);
+  }
+  .shot-card img { border-radius: 18px; }
+  .shot-card.tall { margin-top: 34px; }
+  @media (max-width: 880px) {
+    .feature-grid { grid-template-columns: 1fr; }
+    .feature.reverse .feature-grid { direction: ltr; }
+    .feature-shots { order: -1; }
+    .shot-card.tall { margin-top: 0; }
+  }
+
+  /* ---------- theme strip ---------- */
+  .theme-strip { padding: 56px 0; border-top: 1px solid var(--border); text-align: center; }
+  .theme-strip h2 { font-size: clamp(1.6rem, 2.6vw, 2.1rem); margin-bottom: 12px; }
+  .theme-strip p { color: var(--ink-soft); max-width: 52ch; margin: 0 auto 34px; }
+  .theme-dots { display: flex; justify-content: center; gap: 10px; margin-bottom: 36px; flex-wrap: wrap; }
+  .theme-dots span {
+    width: 30px; height: 30px; border-radius: 50%;
+    display: inline-block;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.5);
+  }
+
+  /* ---------- privacy band ---------- */
+  .privacy-band {
+    background: linear-gradient(160deg, #26301f, #14180f);
+    color: #eff2e9;
+    padding: 72px 0;
+    margin-top: 40px;
+  }
+  .privacy-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: center;
+  }
+  .privacy-band .feature-tag { background: rgba(166,187,146,0.18); color: #c3d4b1; }
+  .privacy-band h2 { color: #f6f8f1; font-size: clamp(1.7rem, 2.8vw, 2.3rem); margin-bottom: 16px; }
+  .privacy-band p { color: #c7d3bc; font-size: 16.5px; }
+  .privacy-list { list-style: none; margin: 26px 0 0; padding: 0; display: grid; gap: 14px; }
+  .privacy-list li {
+    display: flex; gap: 12px; align-items: flex-start;
+    font-size: 15px; color: #dde5d3;
+  }
+  .privacy-list li svg { flex: none; margin-top: 3px; width: 18px; height: 18px; color: #a6bb92; }
+  .privacy-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+  }
+  @media (max-width: 880px) {
+    .privacy-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ---------- final CTA ---------- */
+  .final-cta { padding: 72px 0; text-align: center; }
+  .final-cta h2 { font-size: clamp(1.8rem, 3vw, 2.4rem); margin-bottom: 14px; }
+  .final-cta p { color: var(--ink-soft); max-width: 46ch; margin: 0 auto 30px; }
+  .final-cta .store-row { justify-content: center; }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 0 48px;
+  }
+  .footer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    color: var(--ink-faint);
+    font-size: 14px;
+  }
+  footer a { text-decoration: underline; color: var(--ink-soft); }
+  footer a:hover { color: var(--accent-deep); }
+</style>
+</head>
+<body>
+
+<header class="site-nav">
+  <div class="nav-row">
+    <div class="brand">
+      <img src="assets/icon/icon-192.png" alt="">
+      ZenBell
+    </div>
+    <nav class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#privacy">Privacy</a>
+      <a href="#get-app" class="nav-cta">Get the app</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <span class="eyebrow">Free on iOS &amp; Android</span>
+        <h1>Never wonder if you already gave the <span class="accent">last dose.</span></h1>
+        <p class="lede">
+          ZenBell scans a prescription, reminds you when the next dose is due, and tracks fever
+          and symptoms — entirely on your phone. No account, no cloud sync, no ads.
+        </p>
+        <div class="store-row" id="get-app">
+          <a class="store-badge" href="https://apps.apple.com/us/app/zenbell-parenting-helper/id6810213849" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.365 1.43c0 1.14-.42 2.198-1.107 3.007-.83.98-2.166 1.74-3.29 1.65-.146-1.1.42-2.27 1.08-2.99.83-.94 2.29-1.66 3.317-1.667zM20.54 17.05c-.507 1.15-.75 1.66-1.4 2.68-.91 1.44-2.19 3.23-3.78 3.25-1.41.02-1.77-.92-3.68-.91-1.91.01-2.31.93-3.72.91-1.59-.02-2.8-1.63-3.71-3.07-2.55-4.02-2.82-8.74-1.24-11.25 1.12-1.79 2.9-2.84 4.57-2.84 1.7 0 2.77.93 4.18.93 1.37 0 2.2-.93 4.18-.93 1.5 0 3.08.81 4.2 2.22-3.7 2.03-3.1 7.3.4 9.01z"/></svg>
+            <span class="lines"><small>Download on the</small><strong>App Store</strong></span>
+          </a>
+          <a class="store-badge" href="https://play.google.com/store/apps/details?id=com.portgenix.zenbell" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.6 2.6c-.35.36-.55.9-.55 1.6v15.6c0 .7.2 1.24.55 1.6l.1.08 8.72-8.72v-.2L3.7 2.5z"/><path d="M15.4 14.4l-2.9-2.9V11.3l2.9-2.9 3.35 1.9c.95.55.95 1.45 0 2l-3.35 1.9z" opacity=".7"/><path d="M15.4 14.4l-2.9-2.9-8.9 8.9c.33.35.87.4 1.48.05l10.32-6.05z"/><path d="M15.4 8.4L5.08 2.35c-.6-.35-1.15-.3-1.48.05l8.9 8.9 2.9-2.9z" opacity=".85"/></svg>
+            <span class="lines"><small>Get it on</small><strong>Google Play</strong></span>
+          </a>
+        </div>
+        <div class="hero-proof">
+          <div><strong>On-device</strong>OCR, no cloud AI call</div>
+          <div><strong>Zero</strong>network calls in the app</div>
+          <div><strong>6 themes</strong>light &amp; dark, each</div>
+        </div>
+      </div>
+      <div class="phone-stage">
+        <div class="phone-blob"></div>
+        <div class="phone-frame">
+          <div class="phone-screen">
+            <video autoplay muted loop playsinline>
+              <source src="assets/video/reel.mp4" type="video/mp4">
+            </video>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="value-props">
+    <div class="wrap value-grid">
+      <div class="value-card">
+        <div class="glyph" style="background:var(--mint); color:var(--mint-ink);">📷</div>
+        <h3>Scan the prescription</h3>
+        <p>Point your camera at it. ZenBell reads the medicine name, dose, and schedule for you — right on the device.</p>
+      </div>
+      <div class="value-card">
+        <div class="glyph" style="background:var(--peach); color:var(--peach-ink);">✓</div>
+        <h3>One tap to log a dose</h3>
+        <p>A day-by-day checklist for every medicine, so "did we already give this?" stops being a 2am guessing game.</p>
+      </div>
+      <div class="value-card">
+        <div class="glyph" style="background:var(--accent-soft); color:var(--accent-deep);">🔒</div>
+        <h3>Stays on your phone</h3>
+        <p>No account, no backend, no analytics SDK. Nothing to sign up for, nothing to leak.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+
+    <div class="feature">
+      <div class="wrap feature-grid">
+        <div>
+          <span class="feature-tag">Scan &amp; go</span>
+          <h2>Point, scan, done.</h2>
+          <p>
+            Snap a photo of the prescription and ZenBell fills in the medicine, dose, and how often
+            it's given. All read on-device — nothing is uploaded anywhere to make this work. And
+            since text recognition isn't perfect, every field stays editable before anything is saved
+            or a single reminder is scheduled.
+          </p>
+        </div>
+        <div class="feature-shots">
+          <div class="shot-card"><img src="assets/screenshots/ios-wizard-patient.png" alt="New visit screen with condition detected as Fever, weight and diagnosis date pre-filled"></div>
+          <div class="shot-card tall"><img src="assets/screenshots/ios-wizard-medicine.png" alt="Medicine entry screen showing dose, unit, and an hourly schedule of every 6 hours"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="feature reverse">
+      <div class="wrap feature-grid">
+        <div>
+          <span class="feature-tag">Dose tracking</span>
+          <h2>A checklist, not a guess.</h2>
+          <p>
+            Every medicine gets a day strip and a row of today's doses — given, missed, or still
+            coming. Mark a dose given in one tap, straight from the reminder notification or the
+            home screen widget, no app-opening required.
+          </p>
+        </div>
+        <div class="feature-shots">
+          <div class="shot-card"><img src="assets/screenshots/ios-medicines.png" alt="Medicines tab showing a day strip, given and missed dose ticks, and a Mark Given button"></div>
+          <div class="shot-card tall"><img src="assets/screenshots/android-medicines.png" alt="Android medicines screen with dose history and a 5.0 ml every 6 hours schedule"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="feature">
+      <div class="wrap feature-grid">
+        <div>
+          <span class="feature-tag">Fever &amp; symptoms</span>
+          <h2>Not just a number — the pattern.</h2>
+          <p>
+            Log a temperature and ZenBell tells you plainly whether it's normal, mild, or high.
+            A full history grouped by day means you can actually see whether things are getting
+            better or worse, not just stare at one isolated reading.
+          </p>
+        </div>
+        <div class="feature-shots">
+          <div class="shot-card"><img src="assets/screenshots/ios-fever.png" alt="Fever tab showing a 103 degree high reading and a history of past temperature logs"></div>
+          <div class="shot-card tall"><img src="assets/screenshots/android-dashboard.png" alt="Visit dashboard with a temperature trend chart and medicine dose progress"></div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <section class="theme-strip">
+    <div class="wrap">
+      <h2>Six themes. Light and dark, each.</h2>
+      <p>Pick a palette that fits your kid, or leave it on System and let it follow your phone.</p>
+      <div class="feature-shots" style="justify-content:center;">
+        <div class="shot-card"><img src="assets/screenshots/android-theme.png" alt="Theme picker screen showing the Sunset in Italy color theme selected"></div>
+        <div class="shot-card"><img src="assets/screenshots/android-home.png" alt="Home screen in the orange Sunset in Italy theme"></div>
+        <div class="shot-card tall"><img src="assets/screenshots/ios-home.png" alt="Home screen in a green theme with next dose due and a visit overview tile"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="privacy-band" id="privacy">
+    <div class="wrap privacy-grid">
+      <div>
+        <span class="feature-tag">The part I actually care about</span>
+        <h2>No account. No cloud. No ads.</h2>
+        <p>
+          There's no backend for ZenBell to talk to, even if it wanted to. A sick kid's medical
+          info is about as sensitive as data gets, and it stays exactly where you typed it: on
+          your phone.
+        </p>
+      </div>
+      <div class="privacy-card">
+        <ul class="privacy-list">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> Everything stored locally — Room on Android, SwiftData on iOS</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> No account or sign-in, ever</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> No analytics SDKs, no ad trackers</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> Prescription scanning runs on-device, no cloud AI call</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> One opt-in exception: pasting a tricky prescription into an AI app of your choice — off by default, your call every time</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="final-cta">
+    <div class="wrap">
+      <h2>Built for the 2am moment.</h2>
+      <p>Free to try, one-time unlock after — not a subscription.</p>
+      <div class="store-row">
+        <a class="store-badge" href="https://apps.apple.com/us/app/zenbell-parenting-helper/id6810213849" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.365 1.43c0 1.14-.42 2.198-1.107 3.007-.83.98-2.166 1.74-3.29 1.65-.146-1.1.42-2.27 1.08-2.99.83-.94 2.29-1.66 3.317-1.667zM20.54 17.05c-.507 1.15-.75 1.66-1.4 2.68-.91 1.44-2.19 3.23-3.78 3.25-1.41.02-1.77-.92-3.68-.91-1.91.01-2.31.93-3.72.91-1.59-.02-2.8-1.63-3.71-3.07-2.55-4.02-2.82-8.74-1.24-11.25 1.12-1.79 2.9-2.84 4.57-2.84 1.7 0 2.77.93 4.18.93 1.37 0 2.2-.93 4.18-.93 1.5 0 3.08.81 4.2 2.22-3.7 2.03-3.1 7.3.4 9.01z"/></svg>
+          <span class="lines"><small>Download on the</small><strong>App Store</strong></span>
+        </a>
+        <a class="store-badge" href="https://play.google.com/store/apps/details?id=com.portgenix.zenbell" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.6 2.6c-.35.36-.55.9-.55 1.6v15.6c0 .7.2 1.24.55 1.6l.1.08 8.72-8.72v-.2L3.7 2.5z"/><path d="M15.4 14.4l-2.9-2.9V11.3l2.9-2.9 3.35 1.9c.95.55.95 1.45 0 2l-3.35 1.9z" opacity=".7"/><path d="M15.4 14.4l-2.9-2.9-8.9 8.9c.33.35.87.4 1.48.05l10.32-6.05z"/><path d="M15.4 8.4L5.08 2.35c-.6-.35-1.15-.3-1.48.05l8.9 8.9 2.9-2.9z" opacity=".85"/></svg>
+          <span class="lines"><small>Get it on</small><strong>Google Play</strong></span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap footer-row">
+    <div>© <span id="year"></span> Portgenix. ZenBell is not affiliated with Apple or Google.</div>
+    <div><a href="https://ukanth.github.io/policy/zenbell_privacy.html" target="_blank" rel="noopener">Privacy Policy</a></div>
+  </div>
+</footer>
+
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>
